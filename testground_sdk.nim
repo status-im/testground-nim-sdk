@@ -1,5 +1,5 @@
 import
-  std/[tables, parseutils, strutils, os],
+  std/[tables, parseutils, strutils, os, sequtils],
   chronos, websock/websock, chronicles, stew/byteutils
 
 # workaround https://github.com/status-im/nim-serialization/issues/43
@@ -7,6 +7,7 @@ from serialization import serializedFieldName
 from json_serialization import Reader, init, readValue, handleReadException
 import json_serialization/std/options
 
+export sequtils, strutils, os, tables
 export chronos, options, chronicles, websock
 
 type
@@ -204,6 +205,20 @@ proc publish*(c: Client, topic, content: string) {.async.} =
       payload: some content
     )
   ))
+
+proc param*[T](c: Client, _: type[T], name: string): T =
+  let params = getEnv("TEST_INSTANCE_PARAMS").split("|").mapIt(it.split("=", 2)).mapIt((it[0], it[1])).toTable()
+
+  let param = params[name]
+
+  when T is string:
+    param
+  elif T is bool:
+    param == "true"
+  elif T is Ordinal:
+    parseInt(param)
+  else:
+    {.error: "Unsupported type for param".}
 
 proc runner(todo: proc(c: Client): Future[void]) {.async.} =
   let

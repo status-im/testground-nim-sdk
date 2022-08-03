@@ -12,3 +12,8 @@ enabled = true
 [[testcases]]
 name= "simple_tcp_ping"
 instances = { min = 2, default = 2, max = 2 }
+
+[testcases.params]
+payload = { type = "string", default = "Hello!" }
+count = { type = "int", default = 2 }
+printResult = { type = "bool", default = true }

@@ -18,20 +18,27 @@ testground(client):
 
   await client.waitForBarrier("network_setup", client.testInstanceCount)
 
-  const payload = "Hello playground!"
+  let
+    payload = client.param(string, "payload")
+    count = client.param(int, "count")
+    printResult = client.param(bool, "printResult")
   if myId == 1: # server
     let
       server = createStreamServer(initTAddress(myIp & ":5050"), flags = {ReuseAddr})
       connection = await server.accept()
 
-    doAssert (await connection.write(payload.toBytes())) == payload.len
+    for _ in 0 ..< count:
+      doAssert (await connection.write(payload.toBytes())) == payload.len
     connection.close()
 
   else: # client
     let connection = await connect(initTAddress(serverIp & ":5050"))
-    var buffer: array[payload.len, byte]
+    var buffer = newSeq[byte](payload.len)
 
-    await connection.readExactly(addr buffer[0], payload.len)
+    for _ in 0 ..< count:
+      await connection.readExactly(addr buffer[0], payload.len)
+      doAssert string.fromBytes(buffer) == payload
     connection.close()
-    doAssert string.fromBytes(buffer) == payload
-  client.recordMessage("Hourray " & $myId & "!")
+
+  if printResult:
+    client.recordMessage("Hourray " & $myId & "!")

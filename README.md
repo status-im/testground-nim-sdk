@@ -16,6 +16,6 @@ This is not stable in any shape or form. Features:
 - [X] Network configuration
 - [X] Signal, barrier
 - [X] PubSub
-- [ ] Run configuration
+- [X] Run configuration
 - [ ] Multiple scenario in a single plan
 - [ ] ..
