@@ -18,4 +18,5 @@ This is not stable in any shape or form. Features:
 - [X] PubSub
 - [X] Run configuration
 - [ ] Multiple scenario in a single plan
+- [ ] Metrics
 - [ ] ..
