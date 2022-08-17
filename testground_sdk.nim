@@ -220,7 +220,7 @@ proc param*[T](c: Client, _: type[T], name: string): T =
   else:
     {.error: "Unsupported type for param".}
 
-proc runner(todo: proc(c: Client): Future[void]) {.async.} =
+proc runner(todo: proc(c: Client): Future[void] {.gcsafe.}) {.async.} =
   let
     c = Client(
       testRun: getEnv("TEST_RUN"),
