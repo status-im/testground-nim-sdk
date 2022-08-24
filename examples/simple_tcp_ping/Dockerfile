@@ -2,7 +2,8 @@ FROM nimlang/nim:alpine as builder
 
 # "checkpoint" to avoid installing dependencies every time
 # this is optional
-RUN nimble install -y "https://github.com/status-im/testground-nim-sdk"
+ARG SDK_GIT_REF="master"
+RUN nimble install -y "https://github.com/status-im/testground-nim-sdk@#${SDK_GIT_REF}"
 FROM builder
 
 COPY . .
