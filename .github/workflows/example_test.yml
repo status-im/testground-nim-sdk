@@ -1,0 +1,25 @@
+on:
+  push:
+
+name: test example
+
+jobs:
+  run-example-test-plans:
+    name: "Run example plan"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Setup testground
+        uses: "libp2p/test-plans/.github/actions/setup-testground@master"
+
+      - uses: actions/checkout@v2
+
+      - name: Import the plan
+        run: testground plan import --from examples --name examples
+
+      - name: Run the plan
+        env:
+          SdkGitRef: ${GITHUB_SHA}
+        run: testground run single --plan=examples/simple_tcp_ping --testcase=simple_tcp_ping --runner=local:docker --builder=docker:generic --instances=2 --wait
