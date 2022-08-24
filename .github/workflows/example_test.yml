@@ -17,9 +17,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Import the plan
-        run: testground plan import --from examples --name examples
+        run: testground plan import --name simple_tcp_ping --from examples/simple_tcp_ping
 
       - name: Run the plan
         env:
           SdkGitRef: ${GITHUB_SHA}
-        run: testground run single --plan=examples/simple_tcp_ping --testcase=simple_tcp_ping --runner=local:docker --builder=docker:generic --instances=2 --wait
+        run: testground build composition -f examples/simple_tcp_ping/simple_composition.toml --wait

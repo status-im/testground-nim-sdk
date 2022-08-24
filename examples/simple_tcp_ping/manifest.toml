@@ -6,9 +6,6 @@ runner = "local:docker"
 [builders."docker:generic"]
 enabled = true
 
-[builders."docker:generic".build_args]
-SDK_GIT_REF = """{{ or $.Env.SdkGitRef "master"}}"""
-
 [runners."local:docker"]
 enabled = true
 
