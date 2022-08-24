@@ -19,7 +19,12 @@ jobs:
       - name: Import the plan
         run: testground plan import --name simple_tcp_ping --from examples/simple_tcp_ping
 
-      - name: Run the plan
+      - name: Build the composition
         env:
           SdkGitRef: ${{ github.GITHUB_SHA }}
         run: testground build composition -f examples/simple_tcp_ping/simple_composition.toml --wait
+
+      - name: Run the composition
+        env:
+          SdkGitRef: ${{ github.GITHUB_SHA }}
+        run: testground run composition -f examples/simple_tcp_ping/simple_composition.toml --wait
