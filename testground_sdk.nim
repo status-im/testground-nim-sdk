@@ -197,7 +197,7 @@ proc subscribe*(c: Client, topic: string): AsyncQueue[JsonNode] =
     )
   ).toJson())
 
-proc subscribe*[T](c: Client, topic: string, _: type T): AsyncQueue[T] =
+proc subscribe*[T](c: Client, topic: string, _: type[T]): AsyncQueue[T] =
   var
     theQueue = c.subscribe(topic)
     resQueue = newAsyncQueue[T](1000)

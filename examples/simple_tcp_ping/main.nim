@@ -1,4 +1,5 @@
-import std/strutils, testground_sdk, chronos, stew/byteutils
+import std/strutils, std/random
+import testground_sdk, chronos, stew/byteutils
 
 type
   AwesomeStruct = object
@@ -23,7 +24,7 @@ testground(client):
   await client.waitForBarrier("network_setup", client.testInstanceCount)
 
   randomize()
-  await client.publish("rands", AwesomeStruct(rand: rand(100))
+  await client.publish("rands", AwesomeStruct(rand: rand(100)))
   let randomValues = client.subscribe("rands", AwesomeStruct)
   for _ in 0 ..< 2:
     echo await randomValues.popFirst()
