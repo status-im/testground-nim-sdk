@@ -15,7 +15,7 @@ type
   Client* = ref object
     requestId: int
     requests: Table[string, Future[Response]]
-    subbed: Table[string, AsyncQueue[JsonNode]]
+    subbed: Table[string, AsyncQueue[string]]
     connection: WSSession
     testRun: string
     testPlan: string
@@ -64,7 +64,7 @@ type
     topic: string
     event {.serializedFieldName: "payload".}: Option[Event]
     networkConf {.serializedFieldName: "payload".}: Option[NetworkConf]
-    payload: Option[JsonNode]
+    payload: Option[string]
 
   Event* = object
     #workaround https://github.com/status-im/nim-json-serialization/pull/50
@@ -91,7 +91,7 @@ type
   Response* = object
     id: string
     signal_entry: Option[SignalEntryResponse]
-    subscribe: Option[JsonNode]
+    subscribe: Option[string]
     error: string
 
 proc request(c: Client, r: Request): Future[Response] {.async.} =
@@ -184,12 +184,12 @@ proc updateNetworkParameter*(c: Client, n: NetworkConf) {.async.} =
     )
   ))
 
-proc subscribe*(c: Client, topic: string): AsyncQueue[JsonNode] =
+proc subscribe*(c: Client, topic: string): AsyncQueue[string] =
   ## Subscribe to `topic`. Returns a queue that will be filled with each new entry
   let id = c.requestId
 
   c.requestId.inc
-  result = newAsyncQueue[JsonNode](1000)
+  result = newAsyncQueue[string](1000)
   c.subbed[$id] = result
   asyncSpawn c.connection.send(Request(
     id: $id,
@@ -206,7 +206,6 @@ proc subscribe*[T](c: Client, topic: string, _: type[T]): AsyncQueue[T] =
     mixin decode
     while true:
       let elem = await theQueue.popFirst()
-      echo "Elem: ", $elem
 
       let decoded = json_serialization.decode(Json, $elem, T, allowUnknownFields = true)
       resQueue.addLastNoWait(decoded)
@@ -214,7 +213,7 @@ proc subscribe*[T](c: Client, topic: string, _: type[T]): AsyncQueue[T] =
   asyncSpawn getter()
   resQueue
 
-proc publish*(c: Client, topic: string, content: JsonNode) {.async.} =
+proc publish*(c: Client, topic: string, content: string) {.async.} =
   ## Publish `content` to `topic`
   let r = await c.request(Request(
     publish: some PublishRequest(
@@ -225,8 +224,7 @@ proc publish*(c: Client, topic: string, content: JsonNode) {.async.} =
 
 proc publish*[T](c: Client, topic: string, content: T) {.async.} =
   mixin toJson
-  #TODO is there a better way than this?
-  await c.publish(topic, json_serialization.decode(Json, content.toJson(), JsonNode))
+  await c.publish(topic, content.toJson())
 
 proc param*[T](c: Client, _: type[T], name: string): T =
   let params = getEnv("TEST_INSTANCE_PARAMS").split("|").mapIt(it.split("=", 2)).mapIt((it[0], it[1])).toTable()
