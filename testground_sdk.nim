@@ -1,5 +1,5 @@
 import
-  std/[tables, parseutils, strutils, os, sequtils],
+  std/[tables, parseutils, strutils, os, sequtils, json],
   chronos, websock/websock, chronicles, stew/byteutils
 
 # workaround https://github.com/status-im/nim-serialization/issues/43
@@ -14,7 +14,7 @@ type
   Client* = ref object
     requestId: int
     requests: Table[string, Future[Response]]
-    subbed: Table[string, AsyncQueue[string]]
+    subbed: Table[string, AsyncQueue[JsonNode]]
     connection: WSSession
     testRun: string
     testPlan: string
@@ -90,7 +90,7 @@ type
   Response* = object
     id: string
     signal_entry: Option[SignalEntryResponse]
-    subscribe: Option[string]
+    subscribe: Option[JsonNode]
     error: string
 
 proc request(c: Client, r: Request): Future[Response] {.async.} =
@@ -183,12 +183,12 @@ proc updateNetworkParameter*(c: Client, n: NetworkConf) {.async.} =
     )
   ))
 
-proc subscribe*(c: Client, topic: string): AsyncQueue[string] =
+proc subscribe*(c: Client, topic: string): AsyncQueue[JsonNode] =
   ## Subscribe to `topic`. Returns a queue that will be filled with each new entry
   let id = c.requestId
 
   c.requestId.inc
-  result = newAsyncQueue[string](1000)
+  result = newAsyncQueue[JsonNode](1000)
   c.subbed[$id] = result
   asyncSpawn c.connection.send(Request(
     id: $id,
@@ -196,6 +196,21 @@ proc subscribe*(c: Client, topic: string): AsyncQueue[string] =
       topic: c.getContext() & ":topics:" & topic
     )
   ).toJson())
+
+proc subscribe*[T](c: Client, topic: string, _: type T): AsyncQueue[T] =
+  var
+    theQueue = c.subscribe(topic)
+    resQueue = newAsyncQueue[T](1000)
+  proc getter {.async.} =
+    mixin decode
+    while true:
+      let
+        elem = theQueue.popFirst()
+        decoded = json_serialization.decode(Json, $elem, T, allowUnknownFields = true)
+      resQueue.addLastNoWait(decoded)
+
+  asyncSpawn getter
+  resQueue
 
 proc publish*(c: Client, topic, content: string) {.async.} =
   ## Publish `content` to `topic`
@@ -205,6 +220,10 @@ proc publish*(c: Client, topic, content: string) {.async.} =
       payload: some content
     )
   ))
+
+proc publish*[T](c: Client, topic: string, content: T) {.async.} =
+  mixin toJson
+  await c.publish(topic, content.toJson())
 
 proc param*[T](c: Client, _: type[T], name: string): T =
   let params = getEnv("TEST_INSTANCE_PARAMS").split("|").mapIt(it.split("=", 2)).mapIt((it[0], it[1])).toTable()
@@ -250,7 +269,7 @@ proc runner(todo: proc(c: Client): Future[void] {.gcsafe.}) {.async.} =
       if parsed.id in c.requests:
         c.requests[parsed.id].complete(parsed)
       elif parsed.id in c.subbed:
-        c.subbed[parsed.id].addLastNoWait(parsed.subscribe.get().strip(chars = {'"'}))
+        c.subbed[parsed.id].addLastNoWait(parsed.subscribe.get())
       else:
         echo "Unknown response id!!!", parsed.id
 
