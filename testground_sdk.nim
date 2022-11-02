@@ -103,7 +103,7 @@ proc request(c: Client, r: Request): Future[Response] {.async.} =
   c.requests[r2.id] = retFut
   await c.connection.send(r2.toJson())
 
-  echo "sending:", r2.toJson()
+  #echo "sending:", r2.toJson()
 
   return await retFut
 
@@ -266,7 +266,7 @@ proc runner(todo: proc(c: Client): Future[void] {.gcsafe.}) {.async.} =
         v = string.fromBytes(await c.connection.recvMsg())
         parsed = json_serialization.decode(Json, v, Response, allowUnknownFields = true)
 
-      echo "got:", v
+      #echo "got:", v
       if parsed.id in c.requests:
         c.requests[parsed.id].complete(parsed)
       elif parsed.id in c.subbed:
