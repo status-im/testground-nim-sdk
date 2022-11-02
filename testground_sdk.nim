@@ -9,6 +9,7 @@ import json_serialization/std/options
 
 export sequtils, strutils, os, tables
 export chronos, options, chronicles, websock
+export json_serialization
 
 type
   Client* = ref object
