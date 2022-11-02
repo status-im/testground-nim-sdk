@@ -210,7 +210,7 @@ proc subscribe*[T](c: Client, topic: string, _: type[T]): AsyncQueue[T] =
         decoded = json_serialization.decode(Json, $elem, T, allowUnknownFields = true)
       resQueue.addLastNoWait(decoded)
 
-  asyncSpawn getter
+  asyncSpawn getter()
   resQueue
 
 proc publish*(c: Client, topic, content: string) {.async.} =
