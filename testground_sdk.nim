@@ -206,7 +206,7 @@ proc subscribe*[T](c: Client, topic: string, _: type[T]): AsyncQueue[T] =
     mixin decode
     while true:
       let elem = await theQueue.popFirst()
-      echo "Elem: ", elem
+      echo "Elem: ", $elem
 
       let decoded = json_serialization.decode(Json, $elem, T, allowUnknownFields = true)
       resQueue.addLastNoWait(decoded)
