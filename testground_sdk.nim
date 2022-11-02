@@ -206,7 +206,7 @@ proc subscribe*[T](c: Client, topic: string, _: type[T]): AsyncQueue[T] =
     while true:
       let
         elem = await theQueue.popFirst()
-        decoded = json_serialization.decode(Json, elem, T, allowUnknownFields = true)
+        decoded = json_serialization.decode(Json, $elem, T, allowUnknownFields = true)
       resQueue.addLastNoWait(decoded)
 
   asyncSpawn getter
