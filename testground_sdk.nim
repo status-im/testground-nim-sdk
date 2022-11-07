@@ -64,7 +64,7 @@ type
     topic: string
     event {.serializedFieldName: "payload".}: Option[Event]
     networkConf {.serializedFieldName: "payload".}: Option[NetworkConf]
-    payload: Option[string]
+    payload: Option[JsonNode]
 
   Event* = object
     #workaround https://github.com/status-im/nim-json-serialization/pull/50
@@ -207,13 +207,13 @@ proc subscribe*[T](c: Client, topic: string, _: type[T]): AsyncQueue[T] =
     while true:
       let elem = await theQueue.popFirst()
 
-      let decoded = json_serialization.decode(Json, unescape(elem), T, allowUnknownFields = true)
+      let decoded = json_serialization.decode(Json, elem, T, allowUnknownFields = true)
       resQueue.addLastNoWait(decoded)
 
   asyncSpawn getter()
   resQueue
 
-proc publish*(c: Client, topic: string, content: string) {.async.} =
+proc publish*(c: Client, topic: string, content: JsonNode) {.async.} =
   ## Publish `content` to `topic`
   let r = await c.request(Request(
     publish: some PublishRequest(
@@ -224,7 +224,8 @@ proc publish*(c: Client, topic: string, content: string) {.async.} =
 
 proc publish*[T](c: Client, topic: string, content: T) {.async.} =
   mixin toJson
-  await c.publish(topic, content.toJson())
+  let asJsonNode = json_serialization.decode(Json, content.toJson(), JsonNode)
+  await c.publish(topic, asJsonNode)
 
 proc param*[T](c: Client, _: type[T], name: string): T =
   let params = getEnv("TEST_INSTANCE_PARAMS").split("|").mapIt(it.split("=", 2)).mapIt((it[0], it[1])).toTable()
