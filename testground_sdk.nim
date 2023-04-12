@@ -25,7 +25,7 @@ type
     testHostname: string
     testSubnet: string
 
-  LinkShape* = object
+  LinkShape* = object of RootObj
     latency: int
     jitter: int
     bandwidth: int
@@ -37,12 +37,16 @@ type
     duplicate: float
     duplicate_corr: float
 
+  LinkRule* = object of LinkShape
+    subnet: string
+
   NetworkConf* = object
     network: string
     ipv4 {.serializedFieldName: "IPv4".}: Option[string]
     ipv6 {.serializedFieldName: "IPv6".}: Option[string]
     enable: bool
     default: LinkShape
+    rules: seq[LinkRule]
     callback_state: string
     callback_target: Option[int]
     routing_policy: string
